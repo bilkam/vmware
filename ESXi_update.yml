@@ -1,0 +1,67 @@
+---
+- hosts: ESXi
+  serial: 1 
+  
+  vars:
+   vcenter_hostname : ""
+   vcenter_username: ""
+   vcenter_password: ""
+ 
+  tasks:
+  - name: ESXi enter maintenance 
+    register: status
+    vmware_maintenancemode:
+     hostname: "{{ vcenter_hostname }}"
+     username: "{{ vcenter_username }}"
+     password: "{{ vcenter_password }}"
+     esxi_hostname: "{{ inventory_hostname }}"
+     evacuate: yes
+     validate_certs: no
+     timeout: 3600
+     state: present
+    delegate_to: localhost
+
+  - debug: var=status.msg 
+   
+  - name: ESXi Install Update 
+    shell: 
+      "esxcli software profile update -d /vmfs/volumes/xxxxxxxxxxxxxx -p xxxxxxxxxx-standard" 
+    register: vib 
+    
+  - debug:
+     msg: vib  
+
+  - name: ESXi reboot 
+    vmware_host_powerstate: 
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        esxi_hostname: "{{ inventory_hostname  }}"
+        validate_certs: no
+        timeout: 3600
+        state: reboot-host
+    delegate_to: localhost
+    register: reboot_host
+  
+  - name: ESXi wait for the reboot to complete
+    wait_for:
+      host: "{{inventory_hostname }}"
+      port: 443
+      delay: 360
+      state: started
+      timeout: 3600
+    delegate_to: localhost  
+
+  - name: ESXi exit maintenance 
+    vmware_maintenancemode:
+     hostname: "{{ vcenter_hostname }}"
+     username: "{{ vcenter_username }}"
+     password: "{{ vcenter_password }}"
+     esxi_hostname: "{{ inventory_hostname  }}"
+     evacuate: yes
+     validate_certs: no
+     timeout: 3600
+     state: absent
+    delegate_to: localhost
+
+  - debug: var=status.msg  
