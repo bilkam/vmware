@@ -11,7 +11,7 @@
   tasks:
 
    - name: Shutdown VM
-      vmware_guest_powerstate:
+     vmware_guest_powerstate:
         hostname: "{{ vcenter_server }}"
         username: "{{ vcenter_user }}"
         password: "{{ vcenter_pass }}"
