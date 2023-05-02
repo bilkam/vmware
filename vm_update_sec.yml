@@ -1,0 +1,80 @@
+---
+- hosts: VMs
+  gather_facts: no
+  serial: 1 
+  connection: local
+  vars:
+    - vcenter_server: ""
+    - vcenter_user: ""
+    - vcenter_pass: ""
+
+  tasks:
+
+   - name: Shutdown VM
+      vmware_guest_powerstate:
+        hostname: "{{ vcenter_server }}"
+        username: "{{ vcenter_user }}"
+        password: "{{ vcenter_pass }}"
+        validate_certs: False
+        name: "{{inventory_hostname}}"
+        state: shutdown-guest
+        state_change_timeout: 900
+     register: wait
+
+   - debug:
+        var: wait.instance.hw_power_status
+
+   - name: change VM security configuration
+     vmware_guest:
+       hostname: "{{ vcenter_server }}"
+       username: "{{ vcenter_user }}"
+       password: "{{ vcenter_pass }}"
+       validate_certs: False
+       name: "{{ inventory_hostname }}"
+       customvalues:
+          - key: "isolation.tools.copy.disable" #Disable copy operations.
+            value: "True"
+          - key: "isolation.tools.paste.disable" #Disable paste operations.
+            value: "True"
+          - key: "isolation.tools.dnd.disable" #Disable drag & drop console functionality.
+            value: "True"  
+          - key: "isolation.tools.setGUIOptions.enable" #Disable VM console and paste GUI options
+            value: "false"
+          - key: "isolation.tools.diskShrink.disable" #Disable virtual disk shrinking.
+            value: "True"
+          - key: "isolation.tools.diskWiper.disable" #Disable virtual disk wiping.
+            value: "True"
+          - key: "mks.enable3d" #Disable 3D features if not needed.
+            value: "False"
+          - key: "tools.setInfo.sizeLimit" #Limit informational messages from the VM to the VMX file.
+            value: "1048576"
+          - key: "tools.guestlib.enableHostInfo" #Do not send host information to guests.
+            value: "False"
+          - key: "snapshot.maxSnapshots" #Limit the number of snapshots on the VM.
+            value: "2"
+          - key: "tools.guest.desktop.autolock" #Lock the VM guest session when the remote console is disconnected
+            value: "True"
+          - key: "RemoteDisplay.maxConnections" #Limit the number of console connections.
+            value: "1" 
+          - key: "isolation.device.edit.disable" #Ensure-UnauthorizedModificationOrDisconnectionOfDevicesIsDisabled.
+            value: "True"
+          - key: "isolation.device.connectable.disable" #Ensure-UnauthorizedConnectionOfDevicesIsDisabled.
+            value: "True" 
+          - key: "log.keepOld" #Limit the number of retained VM diagnostic logs..
+            value: "10"       
+   - debug:
+      var: result
+
+   - name: Start VM
+     vmware_guest_powerstate:
+        hostname: "{{ vcenter_server }}"
+        username: "{{ vcenter_user }}"
+        password: "{{ vcenter_pass }}"
+        validate_certs: False
+        name: "{{inventory_hostname}}"
+        state: powered-on
+        state_change_timeout: 900
+     register: wait
+
+   - debug:
+       var: wait.instance.hw_power_status   
