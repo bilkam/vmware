@@ -98,5 +98,5 @@ foreach ($VM in $VMs) {
  }
  
 #Step 12: Disconnect from the vcenter server
-Disconnect-VIServer -Server "bporysivc.prod.adp.fr"  -Confirm:$false
+Disconnect-VIServer -Server $vcenterserver   -Confirm:$false
 #End of script
